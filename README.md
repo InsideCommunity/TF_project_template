@@ -1,8 +1,10 @@
 # TF_project_template
 Template of project managed with Terraform for resources provisioning
 
-Purpose: This template project includes a dedicated CI/CD for Terraform.
+# Purpose
+This template project includes a dedicated CI/CD for Terraform.
 
+# Workflow
 CI Content:
   - Terraform validation syntax for code
   - Terraform format scan
@@ -14,5 +16,6 @@ CD Content:
   - Terraform Plan
   - Terraform Apply
 
+# Environment
 Works with Cloud Provider below:
   - AWS
