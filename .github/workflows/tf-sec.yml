@@ -1,0 +1,20 @@
+name: 'Terraform Security Scan'
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-secu-scan:
+    name: 'TF Security Scan'
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout PR branch
+      uses: actions/checkout@v3
+    # Perform a security scan of the terraform code using TFsec
+    - name: Run TFsec scan
+      uses: aquasecurity/tfsec-action@v1.0.0

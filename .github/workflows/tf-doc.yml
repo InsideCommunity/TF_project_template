@@ -1,0 +1,64 @@
+name: 'Terraform Docs'
+
+on:
+  workflow_call:
+    inputs:
+      commit:
+        description: "Whether the changes should be committed"
+        default: false
+        required: false
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform-doc:
+    name: 'Generate TF Doc'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v3
+
+    - name: Render terraform docs
+      uses: terraform-docs/gh-actions@main
+      id: terraform-docs
+      with:
+        working-dir: .
+        output-file: README.md
+        output-method: inject
+        git-push: ${{ inputs.commit }}
+
+    - name: Prepare PR message
+      run: |
+        baseline="$([[ "${{ inputs.commit }}" = "true" ]] && echo "HEAD~" || echo "HEAD")"
+
+        # TODO: debug, remove
+        echo "${baseline}|||${{ inputs.commit}}|||${{ steps.terraform-docs.outputs.num_changed }}"
+
+        if [ "${{ steps.terraform-docs.outputs.num_changed }}" -eq 0 ] || diff_content="$(git diff --exit-code "${baseline}" README.md)"; then
+          echo "README.md is up to date." >/tmp/README_diff
+          exit 0
+        else
+          cat - >/tmp/README_diff << EOF
+        README.md changes:
+
+        \`\`\`patch
+        ${diff_content}
+        \`\`\`
+        EOF
+
+          # error-out if changes were not committed
+          [[ "${{ inputs.commit }}" = "true" ]]
+          exit "$?"
+        fi
+
+    - name: Update PR comment
+      uses: thollander/actions-comment-pull-request@v2
+      if: ${{ ( success() || failure() ) && github.event_name == 'pull_request' }}
+      with:
+        filePath: /tmp/README_diff
+        comment_tag: documentation_status
