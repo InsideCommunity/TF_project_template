@@ -14,6 +14,7 @@ permissions:
 env:
   AWS_ACCESS_KEY_ID : "${{ secrets.AWS_ACCESS_KEY_ID }}"
   AWS_SECRET_ACCESS_KEY : "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+  GOOGLE_APPLICATION_CREDENTIALS  : /tmp/gcp.creds
   TF_ROOT : "."
 
 jobs:
@@ -27,6 +28,13 @@ jobs:
       tfplanExitCode: ${{ steps.tf-plan.outputs.exitcode }}
 
     steps:
+    # Set-up Google authentication if configured
+    - name: Set-up GCP auth
+      if: ${{ env.GOOGLE_APPLICATION_CREDENTIALS_CONTENT != '' }}
+      run: cat - <<<"${GOOGLE_APPLICATION_CREDENTIALS_CONTENT}" > "$GOOGLE_APPLICATION_CREDENTIALS"
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS_CONTENT: "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_CONTENT }}"
+
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
       uses: actions/checkout@v3
@@ -119,6 +127,13 @@ jobs:
     needs: [terraform-plan]
     
     steps:
+    # Set-up Google authentication if configured
+    - name: Set-up GCP auth
+      if: ${{ env.GOOGLE_APPLICATION_CREDENTIALS_CONTENT != '' }}
+      run: cat - <<<"${GOOGLE_APPLICATION_CREDENTIALS_CONTENT}" > "$GOOGLE_APPLICATION_CREDENTIALS"
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS_CONTENT: "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_CONTENT }}"
+
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
       uses: actions/checkout@v3
