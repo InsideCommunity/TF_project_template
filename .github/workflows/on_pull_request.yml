@@ -1,0 +1,32 @@
+name: 'Pull Request handler'
+
+on:
+  pull_request:
+
+#Special permissions required for OIDC authentication
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  
+jobs:
+  terraform-check-code:
+    uses: ./.github/workflows/tf-lint.yml
+
+  terraform-doc-check:
+    needs: terraform-check-code
+    uses: ./.github/workflows/tf-doc.yml
+
+  terraform-secu-scan-tfsec:
+    needs: terraform-check-code
+    uses: ./.github/workflows/tf-sec.yml
+
+  terraform-estimate:
+    needs: terraform-secu-scan-tfsec
+    if: |
+      always() &&
+      contains(needs.*.result, 'success')
+    uses: ./.github/workflows/tf-estimate.yml
+    secrets:
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+

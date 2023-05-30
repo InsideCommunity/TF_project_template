@@ -20,3 +20,7 @@ CD Content:
 
 Works with Cloud Provider below:
   - AWS
+
+<!-- BEGIN_TF_DOCS -->
+The generated module documentation will be here.
+<!-- END_TF_DOCS -->

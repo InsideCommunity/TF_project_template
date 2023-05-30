@@ -1,9 +1,12 @@
-name: 'Terraform Check-Secure-Estimate'
+name: Terraform Cost Estimate
 
 on:
-  pull_request:
+  workflow_call:
+    secrets:
+      INFRACOST_API_KEY:
+        description: The key to use when connecting to the infracost API
+        required: true
 
-#Special permissions required for OIDC authentication
 permissions:
   id-token: write
   contents: read
@@ -11,77 +14,9 @@ permissions:
 
 env:
   TF_ROOT : "."
-  
+
 jobs:
-  terraform-check-code:
-    name: 'TF Validate code'
-    runs-on: ubuntu-latest
-
-    steps:
-    # Checkout the repository to the GitHub Actions runner
-    - name: Checkout
-      uses: actions/checkout@v3
-
-    # Install the latest version of Terraform CLI
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        terraform_wrapper: false
-
-    # Initialize a new or existing Terraform working directory
-    - name: Terraform Init
-      run: terraform init -backend=false
-
-    # Validate terraform files
-    - name: Terraform Validate
-      run: terraform validate
-
-    # Checks that all Terraform configuration files adhere to a canonical format
-    - name: Terraform Check Format
-      run: terraform fmt -check -recursive
-    
-    ## TFLint installation and configuration
-    - uses: actions/cache@v3
-      name: TFLint - Cache plugin dir
-      with:
-        path: ~/.tflint.d/plugins
-        key: ubuntu-latest-tflint-${{ hashFiles('.tflint.hcl') }}
-
-    - uses: terraform-linters/setup-tflint@v3
-      name: TFLint - Setup
-      with:
-        tflint_version: latest
-
-    - name: TFLint - Show version
-      run: tflint --version
-
-    - name: TFLint - Initiate
-      run: tflint --init
-      env:
-        # https://github.com/terraform-linters/tflint/blob/master/docs/user-guide/plugins.md#avoiding-rate-limiting
-        GITHUB_TOKEN: ${{ github.token }}
-
-    - name: TFLint - Execute
-      run: tflint -f compact
-
-  terraform-secu-scan-tfsec:
-    needs: terraform-check-code
-    name: 'TF Security Scan'
-    runs-on: ubuntu-latest
-
-    steps:
-    # Checkout the repository to the GitHub Actions runner
-    - name: Checkout PR branch
-      uses: actions/checkout@v3
-    # Perform a security scan of the terraform code using TFsec
-    - name: Run TFsec scan
-      uses: aquasecurity/tfsec-action@v1.0.0
-
-  terraform-plan-estimate:
-    needs: terraform-secu-scan-tfsec
-    if: |
-      always() &&
-      contains(needs.*.result, 'success')
+  terraform-estimate:
     name: 'TF Estimate Cost and Plan'
     runs-on: ubuntu-latest
 
@@ -143,4 +78,3 @@ jobs:
                                  --github-token=${{github.token}} \
                                  --pull-request=${{github.event.pull_request.number}} \
                                  --behavior=update
-
